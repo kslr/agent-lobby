@@ -62,8 +62,6 @@ type Mode = "office" | "list";
 const SIDE_DOCK_MIN_WIDTH = 720;
 const SIDE_DOCK_WIDTH = 320;
 const SIDE_DOCK_MAX_WIDTH = 420;
-/** How tall the chat under a list row may grow before it scrolls. */
-const LIST_CHAT_HEIGHT = 320;
 const NOBODY: ReadonlySet<string> = new Set();
 
 export interface CrewViewProps extends PluginSurfaceProps {
@@ -220,10 +218,10 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
         onReview={(requestId) => setDialog({ kind: "permission", agent: node.agent, requestId })}
         onRespond={(requestId, allow) => void respond(node.agent, requestId, allow)}
         busy={busy}
-        nested={!place.dock}
+        compact={!place.dock}
         style={place.style}
-        // In the dock the chat takes what is left; under a list row it is a window of its own.
-        chatStyle={place.dock ? { flex: 1 } : { maxHeight: LIST_CHAT_HEIGHT }}
+        // In the dock the chat takes what is left and scrolls; under a list row it is its last few lines.
+        chatStyle={place.dock ? { flex: 1 } : undefined}
       />
     ),
     [theme, paseo, shown, reducedMotion, workspaceName, closedList, navigation, openAgent, setDialog, respond, busy],

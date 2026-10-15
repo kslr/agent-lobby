@@ -84,7 +84,7 @@ export function Detail({
   onReview,
   onRespond,
   busy,
-  nested,
+  compact,
   style,
   chatStyle,
 }: {
@@ -107,8 +107,8 @@ export function Detail({
   onReview: (requestId: string) => void;
   onRespond: (requestId: string, allow: boolean) => void;
   busy: boolean;
-  /** Inside another scrolling list. */
-  nested?: boolean;
+  /** Under a list row: the chat shows its last few lines without a scroller of its own. */
+  compact?: boolean;
   style?: StyleProp<ViewStyle>;
   chatStyle?: StyleProp<ViewStyle>;
 }) {
@@ -232,7 +232,7 @@ export function Detail({
         shown={shown}
         still={still}
         onOpen={canOpen ? onOpen : null}
-        nested={nested}
+        compact={compact}
         style={chatStyle}
       />
     </View>
