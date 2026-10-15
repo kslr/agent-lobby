@@ -155,7 +155,19 @@ interface ItemContext {
   live: boolean;
 }
 
-function exchangeFromToolCall(item: TimelineItemLike, context: ItemContext): FeedEvent | null {
+export interface AgentMessage {
+  /** The daemon's message-id. */
+  id: string;
+  /** Null when the daemon delivered the message without its sender. */
+  from: string | null;
+  fromTitle: string | null;
+  event: ExchangeEvent;
+  /** The whole body, as it was sent. */
+  body: string;
+}
+
+/** The message the daemon's own `agent_message` tool call carries, with the sender it verified; null for any other item. */
+export function agentMessageOf(item: TimelineItemLike): AgentMessage | null {
   const callId = text(item.callId) ?? "";
   const carried = item.agentMessage as
     | { event?: unknown; sender?: { id?: unknown; title?: unknown }; text?: unknown }
@@ -167,16 +179,28 @@ function exchangeFromToolCall(item: TimelineItemLike, context: ItemContext): Fee
   if (!id) return null;
   const detail = item.detail as { text?: unknown } | null | undefined;
   const named = text(carried?.event);
-  const event = named && EXCHANGE_EVENTS.includes(named) ? (named as ExchangeEvent) : "message";
   return {
-    kind: "exchange",
     id,
     from: text(carried?.sender?.id) || null,
     fromTitle: text(carried?.sender?.title) || null,
+    event: named && EXCHANGE_EVENTS.includes(named) ? (named as ExchangeEvent) : "message",
+    body: text(carried?.text) ?? text(detail?.text) ?? "",
+  };
+}
+
+function exchangeFromToolCall(item: TimelineItemLike, context: ItemContext): FeedEvent | null {
+  const message = agentMessageOf(item);
+  if (!message) return null;
+  const { id, from, fromTitle, event, body } = message;
+  return {
+    kind: "exchange",
+    id,
+    from,
+    fromTitle,
     to: context.agentId,
     event,
-    text: exchangeText(event, text(carried?.text) ?? text(detail?.text) ?? ""),
-    label: exchangeText(event, text(carried?.text) ?? text(detail?.text) ?? "", LABEL_MAX_CHARS),
+    text: exchangeText(event, body),
+    label: exchangeText(event, body, LABEL_MAX_CHARS),
     at: context.at,
     ...(context.seq === undefined ? {} : { seq: context.seq }),
   };
