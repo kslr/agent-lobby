@@ -38,7 +38,6 @@ import {
   type Presence,
 } from "./office-model";
 import { highlighted as highlightedBy, indexNodes, sceneScale } from "./scene-model";
-import { StateIcon } from "./sprites";
 import {
   Chip,
   Empty,
@@ -62,6 +61,9 @@ type Mode = "office" | "list";
 /** Below this width the detail docks under the office instead of beside it. */
 const SIDE_DOCK_MIN_WIDTH = 720;
 const SIDE_DOCK_WIDTH = 320;
+const SIDE_DOCK_MAX_WIDTH = 420;
+/** How tall the chat under a list row may grow before it scrolls. */
+const LIST_CHAT_HEIGHT = 320;
 const NOBODY: ReadonlySet<string> = new Set();
 
 export interface CrewViewProps extends PluginSurfaceProps {
@@ -194,12 +196,23 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
     return { name: room.name, nodes: [...first, ...listed.filter((node) => !first.includes(node))], matching: first.length };
   }, [office, closedRoom, plan, nodes, highlighted]);
 
-  const renderDetail = useCallback(
-    (node: CrewNode, style: StyleProp<ViewStyle>) => (
+  const detailFor = useCallback(
+    (node: CrewNode, place: { dock: boolean; style: StyleProp<ViewStyle> }) => (
       <Detail
         theme={theme}
+        paseo={paseo}
         node={node}
+        shown={shown}
+        still={reducedMotion}
         workspaceName={workspaceName(node.agent)}
+        title={place.dock}
+        {...(place.dock
+          ? {
+              onClose: () => setSelected(null),
+              closeIcon: closedList ? "ArrowLeft" : "X",
+              closeLabel: closedList ? "Back to the closed agents" : "Close details",
+            }
+          : {})}
         canOpen={Boolean(navigation)}
         onOpen={() => openAgent(node.agent)}
         onMessage={() => setDialog({ kind: "message", agent: node.agent })}
@@ -207,10 +220,17 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
         onReview={(requestId) => setDialog({ kind: "permission", agent: node.agent, requestId })}
         onRespond={(requestId, allow) => void respond(node.agent, requestId, allow)}
         busy={busy}
-        style={style}
+        nested={!place.dock}
+        style={place.style}
+        // In the dock the chat takes what is left; under a list row it is a window of its own.
+        chatStyle={place.dock ? { flex: 1 } : { maxHeight: LIST_CHAT_HEIGHT }}
       />
     ),
-    [theme, workspaceName, navigation, openAgent, setDialog, respond, busy],
+    [theme, paseo, shown, reducedMotion, workspaceName, closedList, navigation, openAgent, setDialog, respond, busy],
+  );
+  const renderDetail = useCallback(
+    (node: CrewNode, style: StyleProp<ViewStyle>) => detailFor(node, { dock: false, style }),
+    [detailFor],
   );
 
   const chips = STATE_ORDER.filter((state) => counts[state] > 0);
@@ -233,6 +253,8 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
       : undefined;
   }, [selected, nodes, office, plan.visitors, directory.agents]);
   const sideDock = size.view >= SIDE_DOCK_MIN_WIDTH;
+  // A chat reads better wider; the office keeps at least as much as the dock takes.
+  const dockWidth = Math.round(Math.min(SIDE_DOCK_MAX_WIDTH, Math.max(SIDE_DOCK_WIDTH, size.view * 0.4)));
   // A workspace pane fills its dock; the global list is reading-width, like Paseo's list pages.
   const column = !inPanel ? { width: "100%" as const, maxWidth: 720, alignSelf: "center" as const } : null;
   const onViewLayout = (event: LayoutChangeEvent) => {
@@ -377,46 +399,20 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
             <View
               style={[
                 { backgroundColor: colors.surface1, borderColor: colors.border },
-                sideDock
-                  ? { width: SIDE_DOCK_WIDTH, borderLeftWidth: 1 }
-                  : { maxHeight: "40%", borderTopWidth: 1 },
+                sideDock ? { width: dockWidth, borderLeftWidth: 1 } : { height: "40%", borderTopWidth: 1 },
               ]}
             >
-              <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
-                  <StateIcon theme={theme} state={selectedNode.state} still={reducedMotion} />
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Text numberOfLines={2} style={{ color: colors.foreground, fontSize: font.base, fontWeight: "600" }}>
-                      {displayTitle(selectedNode.agent)}
-                    </Text>
-                    <Muted theme={theme} size={font.xs} numberOfLines={1}>
-                      {[roleOf(selectedNode.agent), displayModel(selectedNode.agent)].filter(Boolean).join(" · ")}
-                    </Muted>
-                  </View>
-                  <Text style={{ color: stateColor(theme, selectedNode.state), fontSize: font.xs }}>
-                    {STATE_LABEL[selectedNode.state]}
-                  </Text>
-                  <IconButton
-                    theme={theme}
-                    icon={closedList ? "ArrowLeft" : "X"}
-                    label={closedList ? "Back to the closed agents" : "Close details"}
-                    onPress={() => setSelected(null)}
-                  />
-                </View>
-                {feed.bubbles.get(selectedNode.agent.id) ? (
-                  <Muted theme={theme} size={font.xs} numberOfLines={2}>
-                    {feed.bubbles.get(selectedNode.agent.id)?.label}
-                  </Muted>
-                ) : null}
-                {renderDetail(selectedNode, null)}
-              </ScrollView>
+              {detailFor(selectedNode, {
+                dock: true,
+                style: { flex: 1, paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: space.xs },
+              })}
             </View>
           ) : null}
           {!selectedNode && closedList ? (
             <View
               style={[
                 { backgroundColor: colors.surface1, borderColor: colors.border },
-                sideDock ? { width: SIDE_DOCK_WIDTH, borderLeftWidth: 1 } : { maxHeight: "40%", borderTopWidth: 1 },
+                sideDock ? { width: dockWidth, borderLeftWidth: 1 } : { maxHeight: "40%", borderTopWidth: 1 },
               ]}
             >
               <ScrollView contentContainerStyle={{ padding: space.md, gap: space.xs }}>

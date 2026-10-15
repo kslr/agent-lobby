@@ -266,3 +266,39 @@ describe("hubFor", () => {
     expect(hubFor({}, () => daemon.source)).not.toBe(hub);
   });
 });
+
+describe("the chat beside the bubbles", () => {
+  const claim = (view: object, revoked: string[] = [], name = "") => ({ view, rank: 0, onRevoked: () => revoked.push(name) });
+
+  it("shares the subscription the bubbles already hold, and leaves it open for them", () => {
+    const daemon = fakeDaemon();
+    const hub = createFeedHub(daemon.source);
+    const bubbles = {};
+    const chat = {};
+    const bubble = hub.acquire("a", () => {}, claim(bubbles));
+    const lease = hub.acquire("a", () => {}, claim(chat));
+    expect(lease).not.toBeNull();
+    expect(daemon.opened).toEqual(["a"]);
+    lease?.release();
+    expect(daemon.stopped).toEqual([]);
+    bubble?.release();
+    expect(daemon.stopped).toEqual(["a"]);
+  });
+
+  it("takes a slot from bubbles that hold the whole budget, and never carries more than the cap", () => {
+    const daemon = fakeDaemon();
+    const hub = createFeedHub(daemon.source);
+    const bubbles = {};
+    const revoked: string[] = [];
+    for (let index = 0; index < FEED_CAP; index += 1) {
+      expect(hub.acquire(`b${index}`, () => {}, { view: bubbles, rank: index, onRevoked: () => revoked.push(`b${index}`) })).not.toBeNull();
+    }
+    const lease = hub.acquire("chosen", () => {}, claim({}));
+    expect(lease).not.toBeNull();
+    expect(hub.size()).toBe(FEED_CAP);
+    // The bubbles' least important agent gave its slot up.
+    expect(revoked).toEqual([`b${FEED_CAP - 1}`]);
+    lease?.release();
+    expect(hub.size()).toBe(FEED_CAP - 1);
+  });
+});

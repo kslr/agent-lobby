@@ -70,6 +70,14 @@ export function bounded(text: string, max = CHAT_TEXT_MAX): { text: string; cut:
   return { text: text.slice(0, end), cut: true };
 }
 
+/**
+ * An agent's text as the chat shows it: an image it attached reads as `[image]`
+ * instead of its markdown and file path. What a person typed is never changed.
+ */
+export function readableText(text: string): string {
+  return text.replace(/!\[[^\]\n]*\]\([^)\n]*\)/g, "[image]");
+}
+
 /** The first line with something on it, whitespace collapsed, cut to `max`. */
 function oneLine(value: unknown, max = SUMMARY_MAX): string {
   const raw = str(value);

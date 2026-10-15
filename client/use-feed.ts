@@ -12,7 +12,7 @@ import {
   type FeedEvent,
   type FeedState,
 } from "./exchanges";
-import { hubFor } from "./feed-hub";
+import { hubFor, type FeedHub } from "./feed-hub";
 import { FEED_CAP, FEED_RETRY_MS, isWanted, planFeed, type FeedCandidate } from "./feed-plan";
 
 /** Stream chunks arrive many times a second; the view hears about them this often. */
@@ -38,6 +38,16 @@ export interface FeedOptions {
   cap?: number;
 }
 
+/** Every mounted Lobby view on this connection, bubbles and chat alike, draws on the same budget. */
+export function timelineHub(paseo: PaseoApi): FeedHub<PaseoAgentTimelineEvent> {
+  return hubFor<PaseoAgentTimelineEvent>(paseo, () => ({
+    subscribe(agentId, handler) {
+      const stop = paseo.agents.ref(agentId).timeline.subscribe(handler);
+      return { stop: () => stop(), ready: stop.ready };
+    },
+  }));
+}
+
 /**
  * Live bubbles and exchanges for the agents a view is showing. Pass the agents
  * of the visible room; `planFeed` picks which of them this view wants, and the
@@ -58,13 +68,7 @@ export function useFeed(paseo: PaseoApi, candidates: readonly FeedCandidate[], o
 
   useEffect(() => {
     let alive = true;
-    // Every mounted Lobby view on this connection draws on the same budget.
-    const hub = hubFor<PaseoAgentTimelineEvent>(paseo, () => ({
-      subscribe(agentId, handler) {
-        const stop = paseo.agents.ref(agentId).timeline.subscribe(handler);
-        return { stop: () => stop(), ready: stop.ready };
-      },
-    }));
+    const hub = timelineHub(paseo);
     const view = {};
     const subscriptions = new Map<string, { since: number; stop: () => void }>();
     const lastWanted = new Map<string, number>();

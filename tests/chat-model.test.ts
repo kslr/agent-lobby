@@ -9,6 +9,7 @@ import {
   chatFromHistory,
   chatItemOf,
   chatRows,
+  readableText,
   reduceChat,
   toolSummary,
   wantsLive,
@@ -276,5 +277,14 @@ describe("chatActions", () => {
     // Shown again: loaded again, live if it is working.
     expect(chatActions(hidden, working, false)).toMatchObject({ acquire: true, clear: false });
     expect(chatActions({ ...idle, shown: false }, idle, false)).toMatchObject({ refetch: true, clear: false });
+  });
+});
+
+describe("readableText", () => {
+  it("shows an attached image as a word, and leaves links and plain text alone", () => {
+    expect(readableText("Saved.\n![Image](file:///tmp/x/shot.png)\nDone")).toBe("Saved.\n[image]\nDone");
+    expect(readableText("See [the docs](https://example.com) and ![](a.png)")).toBe("See [the docs](https://example.com) and [image]");
+    // Half of one, as a stream chunk can end, stays as it is until the rest arrives.
+    expect(readableText("![Image](file:///tmp/x/sh")).toBe("![Image](file:///tmp/x/sh");
   });
 });

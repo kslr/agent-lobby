@@ -3,8 +3,10 @@ import { Icon, Modal, TextInput, useToast } from "@getpaseo/plugin/client/react-
 import type { PaseoAgent, PaseoApi } from "@getpaseo/client";
 import { useCallback, useState } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
-import { displayTitle, type CrewNode } from "./model";
-import { Button, Muted, font, radius, space } from "./ui";
+import { AgentChat } from "./chat";
+import { displayModel, displayTitle, roleOf, STATE_LABEL, type CrewNode } from "./model";
+import { StateIcon } from "./sprites";
+import { Button, IconButton, Muted, font, radius, space, stateColor } from "./ui";
 
 export type Dialog =
   | { kind: "message"; agent: PaseoAgent }
@@ -59,10 +61,22 @@ export function useAgentActions(paseo: PaseoApi): AgentActions {
   return { dialog, setDialog, draft, setDraft, busy, run, respond };
 }
 
+/**
+ * One agent: a header with its state and icon actions, the facts folded away,
+ * any permission it waits on, and its recent chat, read-only. The same in the
+ * office's dock and under a row of the list.
+ */
 export function Detail({
   theme,
+  paseo,
   node,
+  shown,
+  still,
   workspaceName,
+  title,
+  onClose,
+  closeIcon = "X",
+  closeLabel = "Close details",
   canOpen,
   onOpen,
   onMessage,
@@ -70,11 +84,22 @@ export function Detail({
   onReview,
   onRespond,
   busy,
+  nested,
   style,
+  chatStyle,
 }: {
   theme: PluginTheme;
+  paseo: PaseoApi;
   node: CrewNode;
+  /** False while the pane is hidden. */
+  shown: boolean;
+  still: boolean;
   workspaceName: string | null;
+  /** True draws the state, title and model; the list's own row already does. */
+  title: boolean;
+  onClose?: () => void;
+  closeIcon?: string;
+  closeLabel?: string;
   canOpen: boolean;
   onOpen: () => void;
   onMessage: () => void;
@@ -82,10 +107,14 @@ export function Detail({
   onReview: (requestId: string) => void;
   onRespond: (requestId: string, allow: boolean) => void;
   busy: boolean;
+  /** Inside another scrolling list. */
+  nested?: boolean;
   style?: StyleProp<ViewStyle>;
+  chatStyle?: StyleProp<ViewStyle>;
 }) {
   const { agent } = node;
   const { colors } = theme;
+  const [factsOpen, setFactsOpen] = useState(false);
   const facts: Array<[string, string]> = [];
   if (workspaceName) facts.push(["Workspace", workspaceName]);
   facts.push(["Directory", agent.cwd]);
@@ -96,29 +125,66 @@ export function Detail({
     facts.push([key.slice(key.lastIndexOf("/") + 1), value]);
   }
   if (agent.lastError) facts.push(["Last error", agent.lastError]);
+  const secondary = [roleOf(agent), displayModel(agent)].filter(Boolean).join(" · ");
+  const actions = (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+      <IconButton
+        theme={theme}
+        icon="Info"
+        label={factsOpen ? "Hide details" : agent.lastError ? "Show details and the last error" : "Show details"}
+        color={agent.lastError ? colors.statusDanger : factsOpen ? colors.foreground : undefined}
+        onPress={() => setFactsOpen((open) => !open)}
+      />
+      {canOpen ? <IconButton theme={theme} icon="ArrowUpRight" label="Open the agent" onPress={onOpen} /> : null}
+      <IconButton theme={theme} icon="MessageSquare" label="Message the agent" onPress={onMessage} />
+      {agent.status !== "closed" ? (
+        <IconButton theme={theme} icon="Archive" label="Archive the agent" onPress={onArchive} />
+      ) : null}
+      {onClose ? <IconButton theme={theme} icon={closeIcon} label={closeLabel} onPress={onClose} /> : null}
+    </View>
+  );
   return (
-    <View style={[{ gap: space.md }, style]}>
-      <View style={{ gap: space.xs }}>
-        {facts.map(([label, value]) => (
-          <View key={label} style={{ flexDirection: "row", gap: space.sm }}>
-            <Muted theme={theme} size={font.xs} style={{ width: 72 }}>
-              {label}
-            </Muted>
-            <Text
-              selectable
-              numberOfLines={label === "Last error" ? 4 : 2}
-              style={{
-                flex: 1,
-                color: label === "Last error" ? colors.statusDanger : colors.foreground,
-                fontSize: font.xs,
-                lineHeight: font.xs * 1.4,
-              }}
-            >
-              {value}
+    <View style={[{ gap: space.sm, minHeight: 0 }, style]}>
+      {title ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}>
+          <StateIcon theme={theme} state={node.state} still={still} />
+          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+            <Text numberOfLines={1} style={{ color: colors.foreground, fontSize: font.base, fontWeight: "600" }}>
+              {displayTitle(agent)}
+            </Text>
+            <Text numberOfLines={1} style={{ fontSize: font.xs, lineHeight: font.xs * 1.4, color: colors.foregroundMuted }}>
+              <Text style={{ color: stateColor(theme, node.state) }}>{STATE_LABEL[node.state]}</Text>
+              {secondary ? ` · ${secondary}` : ""}
             </Text>
           </View>
-        ))}
-      </View>
+          {actions}
+        </View>
+      ) : (
+        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>{actions}</View>
+      )}
+      {factsOpen ? (
+        <View style={{ gap: space.xs }}>
+          {facts.map(([label, value]) => (
+            <View key={label} style={{ flexDirection: "row", gap: space.sm }}>
+              <Muted theme={theme} size={font.xs} style={{ width: 72 }}>
+                {label}
+              </Muted>
+              <Text
+                selectable
+                numberOfLines={label === "Last error" ? 4 : 2}
+                style={{
+                  flex: 1,
+                  color: label === "Last error" ? colors.statusDanger : colors.foreground,
+                  fontSize: font.xs,
+                  lineHeight: font.xs * 1.4,
+                }}
+              >
+                {value}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       {agent.pendingPermissions.map((request) => (
         <View
           key={request.id}
@@ -158,13 +224,17 @@ export function Detail({
           </View>
         </View>
       ))}
-      <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
-        {canOpen ? <Button theme={theme} label="Open" icon="ArrowUpRight" onPress={onOpen} /> : null}
-        <Button theme={theme} variant="outline" label="Message" icon="MessageSquare" onPress={onMessage} />
-        {agent.status !== "closed" ? (
-          <Button theme={theme} variant="outline" label="Archive" icon="Archive" onPress={onArchive} />
-        ) : null}
-      </View>
+      <AgentChat
+        theme={theme}
+        paseo={paseo}
+        agentId={agent.id}
+        state={node.state}
+        shown={shown}
+        still={still}
+        onOpen={canOpen ? onOpen : null}
+        nested={nested}
+        style={chatStyle}
+      />
     </View>
   );
 }
