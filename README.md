@@ -61,7 +61,7 @@ Dark versions: [surface](docs/lobby-surface-dark.png), [list](docs/lobby-list-da
 - **Closed agents.** Pressing a room's filing cabinet lists them, each with what can still be done.
 - **Search and filters.** They dim everyone who does not match, in place, and mark the cabinet of a
   room with a closed agent that matches.
-- **Detail.** Selecting a character shows its recent chat, read-only: the last twenty items, with
+- **Detail.** Selecting a character shows its recent chat, read-only: up to its last 24 lines, with
   what you typed, what it wrote (appearing as it streams), one line for a run of tool calls, and a
   line pointing to the full chat for anything this view does not draw. Above it are pending
   permissions with Allow, Deny and Review, and icons for details (workspace, directory, labels,
@@ -118,7 +118,8 @@ when the eight are taken, a view goes without and asks again half a minute later
 drawn from `agent_update` alone. The chat of the selected agent draws on the same eight: it shares
 a subscription the bubbles already hold, takes one only while the agent is working or waiting on
 you, and gives it back when you look elsewhere, when the agent stops or when the pane is hidden. An
-idle agent's chat is one request for its last twenty items. A message typed by a person is never read as a message between
+idle agent's chat is one request for its last 60 timeline entries, about 40 to 120 KB for a busy
+agent, most of it tool output. A message typed by a person is never read as a message between
 agents: only the daemon's own record of an agent-to-agent message, with its verified sender, is.
 
 ## Art
