@@ -1,6 +1,6 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import { Icon, ScrollView, useRevealedText } from "@getpaseo/plugin/client/react-native";
-import type { PaseoApi } from "@getpaseo/client";
+import type { PaseoApi } from "./paseo-types";
 import { memo, useCallback, useMemo, useRef } from "react";
 import {
   Pressable,

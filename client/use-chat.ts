@@ -1,4 +1,4 @@
-import type { PaseoAgentTimelineEvent, PaseoApi } from "@getpaseo/client";
+import type { PaseoAgentTimelineEvent, PaseoApi } from "./paseo-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CHAT_PAGE,
