@@ -1,6 +1,6 @@
 {
   "name": "agent-lobby",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "A plugin that shows your agents as a small pixel-art office: who is working, who is waiting for you, who has finished.",
