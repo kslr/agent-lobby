@@ -49,6 +49,23 @@ export function sceneScale(widthPx: number, pixelRatio = 2): SceneScale {
   return { scale, tile, widthTiles: Math.floor(width / tile) };
 }
 
+/** The largest size the office grows to when a wide pane leaves room to spare. */
+export const MAX_SCENE_SCALE = 2;
+
+/**
+ * The size an office `usedTiles` wide is drawn at in a pane `widthPx` wide:
+ * the largest crisp size, up to `MAX_SCENE_SCALE`, at which it still fits
+ * across, and never under `base`. The office is laid out again at that size.
+ */
+export function zoomScale(base: SceneScale, usedTiles: number, widthPx: number, pixelRatio = 2): SceneScale {
+  const width = Math.max(0, Math.floor(widthPx));
+  if (usedTiles <= 0) return base;
+  const fit = Math.floor((Math.min(MAX_SCENE_SCALE, width / (TILE * usedTiles)) * pixelRatio) + 1e-6) / pixelRatio;
+  if (fit <= base.scale) return base;
+  const tile = TILE * fit;
+  return { scale: fit, tile, widthTiles: Math.floor(width / tile) };
+}
+
 /** Padding that brings a `size` px target up to the 44 px minimum. */
 export function touchSlop(size: number): number {
   return Math.max(0, Math.ceil((MIN_TOUCH - size) / 2));

@@ -21,6 +21,8 @@ import {
   spotOf,
   spriteRole,
   touchSlop,
+  zoomScale,
+  MAX_SCENE_SCALE,
   MAX_WALK_MS,
   WALK_MS_PER_TILE,
   moveKind,
@@ -81,6 +83,35 @@ describe("sceneScale", () => {
     }
     // A pane too narrow for a room at the usual size takes the smallest there is.
     expect(sceneScale(150, 3).scale).toBeCloseTo(1);
+  });
+});
+
+describe("zoomScale", () => {
+  it("draws an office larger as far as it still fits across, up to MAX_SCENE_SCALE", () => {
+    // Two rooms 21 tiles across in a 1700 px tab on a 2× screen: as large as allowed.
+    const wide = zoomScale(sceneScale(1700, 2), 21, 1700, 2);
+    expect(wide).toEqual({ scale: MAX_SCENE_SCALE, tile: 16 * MAX_SCENE_SCALE, widthTiles: 53 });
+    // 60 tiles in the same tab: 1700 / 960 = 1.77, so 1.5, the crisp size below.
+    expect(zoomScale(sceneScale(1700, 2), 60, 1700, 2)).toEqual({ scale: 1.5, tile: 24, widthTiles: 70 });
+    // Already filling the pane, or nothing in it: as it was.
+    const side = sceneScale(320, 2);
+    expect(zoomScale(side, 20, 320, 2)).toBe(side);
+    expect(zoomScale(side, 0, 320, 2)).toBe(side);
+  });
+
+  it("keeps one art pixel a whole number of device pixels and the office inside the pane", () => {
+    for (const ratio of [1, 1.25, 1.5, 5 / 3, 2, 3]) {
+      for (const width of [320, 900, 1700]) {
+        for (const used of [9, 21, 40]) {
+          const base = sceneScale(width, ratio);
+          const { scale, widthTiles } = zoomScale(base, used, width, ratio);
+          expect(Math.abs(scale * ratio - Math.round(scale * ratio))).toBeLessThan(1e-9);
+          expect(scale).toBeGreaterThanOrEqual(base.scale);
+          expect(scale).toBeLessThanOrEqual(MAX_SCENE_SCALE + 1e-9);
+          if (scale > base.scale) expect(widthTiles).toBeGreaterThanOrEqual(used);
+        }
+      }
+    }
   });
 });
 

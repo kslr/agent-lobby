@@ -82,6 +82,10 @@ character is about 19 by 29 pixels on a 1.67x display, and a four-desk room with
 lounge fits a 313-pixel Explorer pane as a strip about 115 pixels tall. Bubbles and the cabinet's
 count are drawn at the same scale, in a 3 by 5 pixel face.
 
+A wider pane, such as the Lobby as a workspace tab or the Lobby surface, draws the office larger:
+at the largest crisp size up to 2 at which the whole office still fits across. That is 2.0 on 1x,
+2x and 3x displays and 1.8 on a 1.67x one; an office already as wide as the pane stays as above.
+
 ## What it costs
 
 Measured in the Paseo desktop app on an Apple M4 (10 cores, 120 Hz display, 1.67x), against the

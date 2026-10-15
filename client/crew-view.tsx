@@ -37,7 +37,7 @@ import {
   type Office,
   type Presence,
 } from "./office-model";
-import { highlighted as highlightedBy, indexNodes, sceneScale } from "./scene-model";
+import { highlighted as highlightedBy, indexNodes, sceneScale, zoomScale } from "./scene-model";
 import {
   Chip,
   Empty,
@@ -112,8 +112,8 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
   );
 
   const office = mode === "office";
-  // Small, and the same in a side pane as on the whole surface.
-  const scale = useMemo(() => sceneScale(size.scene, PixelRatio.get()), [size.scene]);
+  // Small in a side pane; a wider pane draws it larger, as far as the office still fits across.
+  const baseScale = useMemo(() => sceneScale(size.scene, PixelRatio.get()), [size.scene]);
   const nodes = useMemo(() => indexNodes(roots), [roots]);
   // A closed agent has no desk, but it keeps the one it had until it has walked out of the door.
   const [left, setLeft] = useState<ReadonlySet<string>>(NOBODY);
@@ -142,11 +142,15 @@ export function CrewView({ scope: homeScope, theme, host, layout, navigation }: 
   const folded = everyGroup.length - groups.length;
   // Laid out whole each time; what came out as before is the object from before, and is not drawn again.
   const lastPlan = useRef<Office | null>(null);
-  const plan = useMemo(() => {
-    const next = shareOffice(lastPlan.current, layoutOffice(groups, { width: scale.widthTiles, agents: directory.agents, holding }));
+  const { plan, scale } = useMemo(() => {
+    const options = { agents: directory.agents, holding };
+    const natural = layoutOffice(groups, { ...options, width: baseScale.widthTiles });
+    const zoomed = zoomScale(baseScale, natural.building?.depth.length ?? 0, size.scene, PixelRatio.get());
+    const laid = zoomed === baseScale ? natural : layoutOffice(groups, { ...options, width: zoomed.widthTiles });
+    const next = shareOffice(lastPlan.current, laid);
     lastPlan.current = next;
-    return next;
-  }, [groups, scale.widthTiles, directory.agents, holding]);
+    return { plan: next, scale: zoomed };
+  }, [groups, baseScale, size.scene, directory.agents, holding]);
   useEffect(() => {
     seatedBefore.current = office ? new Set(plan.desks.keys()) : NOBODY;
   }, [plan, office]);
