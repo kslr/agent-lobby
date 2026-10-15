@@ -1,6 +1,6 @@
 import { usePaseo, type PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { ScrollView, TextInput } from "@getpaseo/plugin/client/react-native";
-import type { PaseoAgent } from "@getpaseo/client";
+import type { PaseoAgent } from "./paseo-types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PixelRatio, Pressable, Text, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from "react-native";
 import { AgentDialogs, Detail, useAgentActions } from "./detail";

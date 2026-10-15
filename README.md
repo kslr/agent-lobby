@@ -133,16 +133,19 @@ bundled.
 ```bash
 git clone https://github.com/linhmh8/agent-lobby
 cd agent-lobby
-npm install
 paseo plugin install "$PWD"
 ```
 
 Requires Paseo 0.11.2 or newer: that is the first release whose daemon hands clients a message
 between agents with its verified sender. There is no build step and nothing to configure.
+Paseo supplies the runtime modules; npm dependencies are only needed for development.
 
 ## Develop
 
+Use Node.js 24 or newer and install development dependencies before checking changes:
+
 ```bash
+npm ci
 npm run check                # tsc + vitest
 paseo plugin reload lobby    # recompile and reload in the running app
 ```

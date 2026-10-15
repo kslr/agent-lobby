@@ -1,4 +1,4 @@
-import type { PaseoAgent, PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoAgent, PaseoWorkspace } from "./paseo-types";
 
 export type CrewState = "needs-input" | "failed" | "working" | "ready" | "idle" | "closed";
 

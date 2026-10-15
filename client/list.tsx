@@ -1,6 +1,6 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import { FlatList } from "@getpaseo/plugin/client/react-native";
-import type { PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoWorkspace } from "./paseo-types";
 import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import {

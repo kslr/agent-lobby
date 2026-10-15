@@ -1,4 +1,4 @@
-import type { PaseoAgent } from "@getpaseo/client";
+import type { PaseoAgent } from "./paseo-types";
 import { PROPS, PROP_USES } from "./pixel/props";
 import { STATE_ORDER, activityAt, parentAgentId, roleOf, type CrewGroup, type CrewNode, type CrewState } from "./model";
 

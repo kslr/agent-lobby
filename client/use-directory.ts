@@ -1,4 +1,4 @@
-import type { PaseoAgent, PaseoApi, PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoAgent, PaseoApi, PaseoWorkspace } from "./paseo-types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HIDE_AFTER_MS, wakeDelay } from "./wake";
 

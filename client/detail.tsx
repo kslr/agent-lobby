@@ -1,6 +1,6 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import { Icon, Modal, TextInput, useToast } from "@getpaseo/plugin/client/react-native";
-import type { PaseoAgent, PaseoApi } from "@getpaseo/client";
+import type { PaseoAgent, PaseoApi } from "./paseo-types";
 import { useCallback, useState } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { AgentChat } from "./chat";

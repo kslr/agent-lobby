@@ -1,4 +1,4 @@
-import type { PaseoAgent } from "@getpaseo/client";
+import type { PaseoAgent } from "./paseo-types";
 import type { Exchange } from "./exchanges";
 import { STATE_LABEL, displayTitle, matches, roleOf, type CrewNode, type CrewState } from "./model";
 import type { Act, Office, Point, Presence } from "./office-model";
