@@ -1,10 +1,17 @@
 {
   "name": "agent-lobby",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "A plugin that shows your agents as a small pixel-art office: who is working, who is waiting for you, who has finished.",
-  "keywords": ["paseo", "paseo-plugin", "agents", "lobby", "office", "pixel-art"],
+  "keywords": [
+    "paseo",
+    "paseo-plugin",
+    "agents",
+    "lobby",
+    "office",
+    "pixel-art"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=24"
