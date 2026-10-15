@@ -61,8 +61,11 @@ Dark versions: [surface](docs/lobby-surface-dark.png), [list](docs/lobby-list-da
 - **Closed agents.** Pressing a room's filing cabinet lists them, each with what can still be done.
 - **Search and filters.** They dim everyone who does not match, in place, and mark the cabinet of a
   room with a closed agent that matches.
-- **Actions.** Selecting a character shows its workspace, directory, last error and pending
-  permissions with Allow, Deny and Review, plus Open, Message and Archive. Archive confirms first.
+- **Detail.** Selecting a character shows its recent chat, read-only: the last twenty items, with
+  what you typed, what it wrote (appearing as it streams), one line for a run of tool calls, and a
+  line pointing to the full chat for anything this view does not draw. Above it are pending
+  permissions with Allow, Deny and Review, and icons for details (workspace, directory, labels,
+  last error), Open, Message and Archive. Archive confirms first.
 - **List.** The toggle beside Office shows the same agents as rows ordered by state then age, each
   with a small animated state icon and the same detail underneath.
 - **Roles.** An optional `ghostline/role` label on an agent changes its character's outline:
@@ -112,7 +115,10 @@ the plugin keeps at most eight open per daemon connection, however many Lobby ta
 are mounted: views share one registry, and two views watching the same agent share one
 subscription. Each view asks for the working and waiting agents of the rooms it has on screen;
 when the eight are taken, a view goes without and asks again half a minute later. Everyone else is
-drawn from `agent_update` alone. A message typed by a person is never read as a message between
+drawn from `agent_update` alone. The chat of the selected agent draws on the same eight: it shares
+a subscription the bubbles already hold, takes one only while the agent is working or waiting on
+you, and gives it back when you look elsewhere, when the agent stops or when the pane is hidden. An
+idle agent's chat is one request for its last twenty items. A message typed by a person is never read as a message between
 agents: only the daemon's own record of an agent-to-agent message, with its verified sender, is.
 
 ## Art
@@ -144,6 +150,8 @@ paseo plugin reload lobby    # recompile and reload in the running app
 - `client/office-model.ts`: rooms, desks, seats, zones, breaks, where each character is. Pure, tested.
 - `client/exchanges.ts`, `client/feed-plan.ts`, `client/feed-hub.ts`: messages and bubbles, which
   timelines to subscribe to, and the shared budget. Pure, tested.
+- `client/chat-model.ts`: the selected agent's chat, folded from a page and its live events, and
+  when it subscribes. Pure, tested. `client/use-chat.ts` and `client/chat.tsx` bind and draw it.
 - `client/scene-model.ts`, `client/motion-model.ts`, `client/wake.ts`: scale, walk paths, frame
   timing, when a hidden pane lets go. Pure, tested.
 - `client/pixel/`: the art, the fonts and the encoder. Pure, tested.
