@@ -10,7 +10,7 @@ A working agent sits typing with code scrolling on its screen and a one-word bub
 
 A message from one agent to another shows as a bubble over the sender and an envelope that travels to the recipient's desk. Characters walk between their desk, the pantry and the lounge instead of jumping. Seats come from who started an agent and when, so nobody moves when somebody else starts or finishes.
 
-Selecting a character shows its workspace, directory, last error and pending permissions with Allow, Deny and Review, plus Open, Message and Archive. A List toggle shows the same agents as rows with a small animated state icon.
+Selecting a character shows its recent chat, read-only, under its pending permissions with Allow, Deny and Review and icons for details, Open, Message and Archive. A List toggle shows the same agents as rows with a small animated state icon.
 
 An optional `ghostline/role` label on an agent changes its character's outline (`overseer`, `nexus` or `meow`); without it an agent is a plain character. Labels only change the drawing.
 
