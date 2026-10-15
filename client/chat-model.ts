@@ -19,8 +19,16 @@ import {
 import { isWanted } from "./feed-plan";
 import type { CrewState } from "./model";
 
-/** How many timeline items the chat keeps, and how many a refetch asks for. */
-export const CHAT_ITEMS = 20;
+/**
+ * How many entries a refetch asks for. A busy agent's tail is mostly thinking and tool calls,
+ * which fold away: measured on busy agents, 20 entries came to 4-7 lines of text and 60 to
+ * 13-19, at 77-115 KB a page, most of it tool output.
+ */
+export const CHAT_PAGE = 60;
+/** How many lines the chat draws, a run of tool calls being one. */
+export const CHAT_ROWS = 24;
+/** How many items it holds at most, however few lines they fold into. */
+export const CHAT_MAX_ITEMS = 200;
 /** How much of one message the chat keeps. The rest is a line pointing to the full chat. */
 export const CHAT_TEXT_MAX = 2_000;
 /** How much of a tool call's argument the chat keeps: one line. */
@@ -218,7 +226,24 @@ function place(items: ChatItem[], next: ChatItem): void {
   items.push(next);
 }
 
-const keep = (items: ChatItem[]): ChatItem[] => (items.length > CHAT_ITEMS ? items.slice(-CHAT_ITEMS) : items);
+/** Whether `item` starts a line of its own after `before`, the way `chatRows` folds them. */
+function startsRow(before: ChatItem | undefined, item: ChatItem): boolean {
+  if (!before) return true;
+  if (item.kind === "tool") return before.kind !== "tool";
+  if (item.kind === "elsewhere") return before.kind !== "elsewhere";
+  return true;
+}
+
+/** The newest items that draw as at most `CHAT_ROWS` lines, and no more than `CHAT_MAX_ITEMS` of them. */
+export function keep(items: ChatItem[]): ChatItem[] {
+  const starts: number[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    if (startsRow(items[index - 1], items[index] as ChatItem)) starts.push(index);
+  }
+  const byRows = starts.length > CHAT_ROWS ? (starts[starts.length - CHAT_ROWS] as number) : 0;
+  const start = Math.max(byRows, items.length - CHAT_MAX_ITEMS);
+  return start > 0 ? items.slice(start) : items;
+}
 
 function trimmed(state: ChatState, items: ChatItem[], cursor: number | null, open: boolean): ChatState {
   const kept = keep(items);

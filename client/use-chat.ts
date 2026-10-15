@@ -1,7 +1,7 @@
 import type { PaseoAgentTimelineEvent, PaseoApi } from "@getpaseo/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  CHAT_ITEMS,
+  CHAT_PAGE,
   EMPTY_CHAT,
   applyHistory,
   chatActions,
@@ -78,7 +78,7 @@ export function useChat(paseo: PaseoApi, agentId: string | null, crewState: Crew
       flushTimer = null;
       void paseo.agents
         .ref(target)
-        .timeline.refetch({ direction: "tail", limit: CHAT_ITEMS, projection: "projected" })
+        .timeline.refetch({ direction: "tail", limit: CHAT_PAGE, projection: "projected" })
         .then(
           (page) => {
             if (loading !== mine) return;

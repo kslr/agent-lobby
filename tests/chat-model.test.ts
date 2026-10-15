@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  CHAT_ITEMS,
+  CHAT_MAX_ITEMS,
+  CHAT_ROWS,
   CHAT_TEXT_MAX,
   EMPTY_CHAT,
   applyHistory,
@@ -142,12 +143,29 @@ describe("chatFromHistory", () => {
     expect(state).toMatchObject({ cursor: 9, epoch: "e1", hasOlder: true, open: true });
   });
 
-  it("keeps the last CHAT_ITEMS items", () => {
-    const entries = Array.from({ length: CHAT_ITEMS + 5 }, (_, index) => entry(index, say(`m${index}`)));
+  it("keeps the newest items that draw as CHAT_ROWS lines, a run of tool calls being one", () => {
+    const entries = Array.from({ length: CHAT_ROWS + 5 }, (_, index) => entry(index, say(`m${index}`)));
     const state = chatFromHistory({ entries });
-    expect(state.items).toHaveLength(CHAT_ITEMS);
+    expect(state.items).toHaveLength(CHAT_ROWS);
     expect(state.items[0]).toMatchObject({ text: "m5" });
     expect(state.hasOlder).toBe(true);
+    // Thirty messages, each after a run of three tool calls: whole lines are kept, never half a run.
+    const busy = [];
+    for (let index = 0; index < 30; index += 1) {
+      for (let call = 0; call < 3; call += 1) busy.push(entry(busy.length, tool(`c${index}-${call}`, "Bash", "completed")));
+      busy.push(entry(busy.length, say(`said ${index}`)));
+    }
+    const folded = chatFromHistory({ entries: busy });
+    expect(chatRows(folded.items)).toHaveLength(CHAT_ROWS);
+    expect(folded.items[0]).toMatchObject({ kind: "tool", callId: "c18-0" });
+    expect(chatRows(folded.items)[0]).toMatchObject({ kind: "tools", tools: [{}, {}, {}] });
+  });
+
+  it("holds no more than CHAT_MAX_ITEMS items, however few lines they fold into", () => {
+    const entries = Array.from({ length: CHAT_MAX_ITEMS + 50 }, (_, index) => entry(index, tool(`c${index}`, "Read", "completed")));
+    const state = chatFromHistory({ entries });
+    expect(state.items).toHaveLength(CHAT_MAX_ITEMS);
+    expect(state.items[0]).toMatchObject({ callId: "c50" });
   });
 });
 
@@ -199,7 +217,7 @@ describe("reduceChat", () => {
   it("stays bounded however long the stream runs", () => {
     let state = base;
     for (let seq = 2; seq < 200; seq += 1) state = fold(state, live(seq, seq % 2 ? say("x".repeat(500), `m${seq}`) : tool(`c${seq}`, "Bash", "completed")));
-    expect(state.items.length).toBeLessThanOrEqual(CHAT_ITEMS);
+    expect(chatRows(state.items).length).toBeLessThanOrEqual(CHAT_ROWS);
     expect(state.hasOlder).toBe(true);
     let long = fold(base, live(2, say("y", "a")));
     for (let seq = 3; seq < 100; seq += 1) long = fold(long, live(seq, say("z".repeat(100), "a")));
